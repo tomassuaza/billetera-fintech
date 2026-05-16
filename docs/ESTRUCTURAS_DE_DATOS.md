@@ -221,6 +221,69 @@ llamado por:
 
 ---
 
+## 7. Grafo dirigido y ponderado — Red de transferencias
+
+**Donde:** `GrafoTransferenciasRepository`, atributo
+`adyacencia: Map<String, Map<String, Arista>>`.
+
+**Que es:** Un grafo dirigido (la transferencia va de A hacia B, no
+viceversa) y ponderado (cada arista guarda el monto acumulado y el
+numero de envios). Los nodos son los IDs de usuario; las aristas
+representan que existe al menos una transferencia externa de un
+usuario a otro.
+
+**Por que lista de adyacencia y no matriz:** En cualquier sistema real
+la red de transferencias es **esparsa** — la mayoria de usuarios solo
+se relaciona con unos pocos. Una matriz `V x V` gastaria O(V²) memoria
+casi vacia. La lista de adyacencia gasta O(V + E) y permite recorrer
+"vecinos de X" en tiempo proporcional a su grado, no a V.
+
+**Diseño con doble HashMap:** El nivel exterior mapea cada origen a
+sus aristas salientes. El nivel interior usa un `HashMap<idDestino,
+Arista>` (no una `List<Arista>`) porque al registrar una nueva
+transferencia necesitamos saber en O(1) si ya existia una arista para
+ese par origen-destino y, si existia, acumular el peso en lugar de
+crear una nueva.
+
+**La clase Arista:** guarda `pesoTotal` (monto BigDecimal acumulado),
+`conteo` (numero de transferencias), y las fechas de la primera y
+ultima. Tiene `acumular(monto)` y `restar(monto)` para los flujos de
+transferencia y reversion.
+
+**Sincronizacion con el resto del sistema:**
+- `TransaccionService.transferir` llama a
+  `grafoService.registrarTransferencia` solo cuando la transferencia
+  es `EXTERNA` (entre usuarios distintos).
+- `ReversionService.revertir` llama a
+  `grafoService.revertirTransferencia` cuando la transaccion original
+  era externa, para que la red refleje el estado actualizado.
+
+**Algoritmos implementados:**
+- **BFS por nivel** desde un usuario hasta una profundidad dada
+  (cola FIFO con `ArrayDeque.offer/poll`).
+- **Amigos de amigos**: BFS de profundidad 2, devuelve solo el
+  segundo nivel (excluye al propio usuario y a sus vecinos directos).
+- **Camino mas corto** entre dos usuarios: BFS con tabla de padres
+  para reconstruir la ruta.
+- **Top rutas frecuentes**: ordena todas las aristas por peso total
+  descendente, desempata por numero de transferencias.
+- **Deteccion de ciclos**: DFS con tres colores
+  (BLANCO/GRIS/NEGRO). Si durante el recorrido se encuentra una
+  arista a un nodo GRIS (en pila de recursion), hay ciclo y se
+  reconstruye usando la tabla de padres.
+
+**Complejidad:**
+- `registrarTransferencia(o, d, m)`: O(1) promedio
+- `revertirTransferencia(o, d, m)`: O(1) promedio
+- `vecinos(idUsuario)`: O(grado(u))
+- `bfsPorNivel(origen, prof)`: O(V + E) en el peor caso
+- `amigosDeAmigos(usuario)`: O(V + E)
+- `caminoMasCorto(o, d)`: O(V + E) (BFS sin pesos)
+- `rutasFrecuentes(topN)`: O(E log E) — ordena todas las aristas
+- `detectarCiclos()`: O(V + E) — DFS unico con coloreo
+
+---
+
 ## Resumen visual de la asignacion
 
 | Modulo                       | Estructura     | Justificacion clave             |
@@ -231,3 +294,4 @@ llamado por:
 | Operaciones programadas      | PriorityQueue  | Orden por fecha (heap)          |
 | Notificaciones por usuario   | LinkedList Q   | FIFO offer/poll O(1)            |
 | Ranking de fidelizacion      | TreeMap        | Consultas por rango O(log n+k)  |
+| Red de transferencias        | Grafo (lista)  | BFS/DFS O(V+E), espacio O(V+E)  |

@@ -18,6 +18,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *   por fecha de ejecucion.
  * - TreeMap (arbol rojo-negro) para el ranking de usuarios por puntos, con
  *   consultas por rango en O(log n + k).
+ * - Grafo dirigido y ponderado (lista de adyacencia) para la red de
+ *   transferencias entre usuarios. Soporta BFS, deteccion de ciclos y
+ *   busqueda de rutas frecuentes.
  */
 @SpringBootApplication
 public class BilleteraApplication {

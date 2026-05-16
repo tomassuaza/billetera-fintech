@@ -182,7 +182,47 @@ indica cuantas se despacharon.
 
 ---
 
-## 8. Recuperacion ante errores
+## 8. Red de transferencias (grafo dirigido y ponderado)
+
+La pagina **Red** del menu muestra el grafo dirigido entre usuarios.
+Las aristas representan transferencias **externas** (entre usuarios
+distintos); las internas no entran al grafo porque mueven dinero
+dentro de la misma persona.
+
+### Construir un grafo de prueba
+1. Asegurate de tener al menos tres usuarios con billeteras y saldo:
+   ej. Juan, Maria, Andres.
+2. Desde el detalle de una billetera de Juan, transfiere a una
+   billetera de Maria (ej. $20.000). Crea otra transferencia mas
+   pequena (ej. $5.000).
+3. Desde una billetera de Maria, transfiere a Andres ($10.000).
+4. Para crear un **ciclo**, desde Andres transfiere de vuelta a Juan.
+
+### Que verificar en la pagina Red
+5. En **Aristas del grafo** veras tres filas (Juan→Maria, Maria→Andres,
+   Andres→Juan). La fila Juan→Maria debe tener peso $25.000 y conteo 2
+   (las dos transferencias se acumularon en una sola arista).
+6. En **Vecinos y amigos de amigos**, selecciona a Juan:
+   - Vecinos directos: Maria
+   - Amigos de amigos (BFS nivel 2): Andres
+7. Cambia el selector a Andres: vecinos directos = Juan, amigos de
+   amigos = Maria.
+8. En **Camino mas corto**, elige origen=Juan, destino=Andres y click
+   en "Buscar camino" — debe devolver `Juan → Maria → Andres` (2 saltos).
+9. En **Top rutas frecuentes** veras las aristas ordenadas por peso
+   descendente; Juan→Maria debe estar primero.
+10. En **Ciclos detectados** debe aparecer `Juan → Maria → Andres → Juan`
+    (o equivalente segun el orden del DFS).
+
+### Reversion y consistencia con el grafo
+11. Vuelve al detalle de Juan y deshace su ultima transferencia externa.
+12. Recarga la pagina Red: el peso y el conteo de la arista
+    correspondiente bajan; si el conteo llega a 0, la arista desaparece
+    del grafo.
+
+---
+
+## 9. Recuperacion ante errores
 
 - Mira la consola del navegador (F12) para errores de red
 - Mira la consola del backend para excepciones de Java
