@@ -39,6 +39,7 @@ public class TransaccionService {
     private final FidelizacionService fidelizacionService;
     private final NotificacionService notificacionService;
     private final GrafoService grafoService;
+    private final FraudeService fraudeService;
 
     public TransaccionService(TransaccionRepository repo,
                               BilleteraRepository billeteraRepo,
@@ -46,7 +47,8 @@ public class TransaccionService {
                               ReversionRepository reversionRepo,
                               FidelizacionService fidelizacionService,
                               NotificacionService notificacionService,
-                              GrafoService grafoService) {
+                              GrafoService grafoService,
+                              FraudeService fraudeService) {
         this.repo = repo;
         this.billeteraRepo = billeteraRepo;
         this.usuarioRepo = usuarioRepo;
@@ -54,6 +56,7 @@ public class TransaccionService {
         this.fidelizacionService = fidelizacionService;
         this.notificacionService = notificacionService;
         this.grafoService = grafoService;
+        this.fraudeService = fraudeService;
     }
 
     // -------------------- RECARGA --------------------
@@ -214,6 +217,12 @@ public class TransaccionService {
                     billeteraImpactada.getNombre(),
                     billeteraImpactada.getSaldo());
         }
+
+        // Analisis de patrones inusuales. Se hace al final, despues de
+        // que la transaccion ya esta registrada y visible en el historial,
+        // para que las reglas puedan compararse contra el conjunto
+        // completo de operaciones recientes del usuario.
+        fraudeService.analizar(t);
         return t;
     }
 

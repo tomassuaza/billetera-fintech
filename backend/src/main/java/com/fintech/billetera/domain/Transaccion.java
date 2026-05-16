@@ -1,6 +1,7 @@
 package com.fintech.billetera.domain;
 
 import com.fintech.billetera.domain.enums.EstadoTransaccion;
+import com.fintech.billetera.domain.enums.NivelRiesgo;
 import com.fintech.billetera.domain.enums.TipoTransaccion;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,6 +31,7 @@ public class Transaccion {
     private int puntosGenerados;
     private boolean reversible;
     private String motivoRiesgo;
+    private NivelRiesgo nivelRiesgo = NivelRiesgo.NINGUNO;
 
     public Transaccion() {}
 
@@ -44,6 +46,7 @@ public class Transaccion {
         this.fecha = LocalDateTime.now();
         this.estado = EstadoTransaccion.PENDIENTE;
         this.reversible = true;
+        this.nivelRiesgo = NivelRiesgo.NINGUNO;
     }
 
     public String getId() { return id; }
@@ -68,4 +71,6 @@ public class Transaccion {
     public void setReversible(boolean r) { this.reversible = r; }
     public String getMotivoRiesgo() { return motivoRiesgo; }
     public void setMotivoRiesgo(String m) { this.motivoRiesgo = m; }
+    public NivelRiesgo getNivelRiesgo() { return nivelRiesgo; }
+    public void setNivelRiesgo(NivelRiesgo n) { this.nivelRiesgo = n; }
 }
