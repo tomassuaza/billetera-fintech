@@ -1,49 +1,61 @@
 # Billetera Fintech
 
 Plataforma fintech de billeteras digitales para el proyecto final de
-**Estructuras de Datos 2026-1**.
+**Estructuras de Datos 2026-1**. Simula una aplicacion tipo Nequi o
+Daviplata: cada usuario administra varias billeteras, hace recargas,
+retiros y transferencias, programa operaciones futuras, gana puntos,
+recibe notificaciones y entra en un sistema de auditoria que detecta
+patrones inusuales.
 
-## Estado actual: Dia 7 completo
+## Modulos implementados
 
-### Modulos implementados
-- ✅ Gestion de usuarios (registro, listado, eliminacion)
-- ✅ Multi-billetera por usuario con tipos categoricos
-- ✅ Transacciones: recargar, retirar, transferir (interna y externa)
-- ✅ Reversion de operaciones (deshacer ultima)
-- ✅ Operaciones programadas (con ejecucion automatica de vencidas)
-- ✅ Sistema de puntos y niveles de fidelizacion
-- ✅ Ranking con consultas por rango de puntos
-
-### Modulos pendientes (dias 8-15)
-- ⏳ Sistema de notificaciones (Cola)
-- ⏳ Grafo de transferencias entre usuarios
-- ⏳ Analitica avanzada (top usuarios, billeteras, etc.)
-- ⏳ Deteccion de fraude por reglas y patrones
-- ⏳ Tests unitarios y benchmarks
-- ⏳ Informe tecnico final
+- Gestion de usuarios (registro, listado, eliminacion).
+- Multiples billeteras por usuario con tipos categoricos.
+- Operaciones financieras: recarga, retiro, transferencia interna y
+  externa.
+- Reversion de operaciones con pila por usuario.
+- Operaciones programadas con ejecucion automatica de vencidas.
+- Sistema de puntos y niveles de fidelizacion (Bronce, Plata, Oro,
+  Platino) con ranking por TreeMap.
+- Notificaciones en cola FIFO por usuario (bienvenida, saldo bajo,
+  ascenso de nivel, operacion rechazada, programadas, fraude).
+- Red dirigida y ponderada de transferencias entre usuarios con BFS,
+  amigos de amigos, camino mas corto, rutas frecuentes y deteccion de
+  ciclos.
+- Analitica de movimientos: top usuarios y billeteras activas,
+  distribuciones por tipo y categoria, monto movilizado en rango
+  temporal, top transacciones por valor.
+- Deteccion automatica de patrones inusuales (rafagas,
+  fragmentacion, montos atipicos, mismo destino repetido) con
+  historial de auditoria y alerta automatica al usuario.
 
 ## Stack
-- **Backend:** Java 17 + Spring Boot 3.2.5 (puerto 8080)
+
+- **Backend:** Java 17 + Spring Boot 3.2.5 (puerto 8081)
 - **Frontend:** React 18 + Vite + Tailwind CSS (puerto 5173)
-- **Persistencia:** En memoria (HashMap, LinkedList, ArrayDeque, PriorityQueue, TreeMap)
+- **Persistencia:** en memoria. HashMap, LinkedList (LIFO y FIFO),
+  ArrayDeque, PriorityQueue, TreeMap, TreeSet, lista de adyacencia.
 
 ## Como correr
 
-### 1. Backend
+### Backend
 ```bash
 cd backend
 mvn spring-boot:run
 ```
-Quedara en http://localhost:8080
+Queda en `http://localhost:8081`.
 
-### 2. Frontend
+### Frontend (en otra terminal)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Quedara en http://localhost:5173
+Queda en `http://localhost:5173`.
 
 ## Documentacion
-- `docs/ESTRUCTURAS_DE_DATOS.md` — explicacion de cada estructura usada
-- `docs/INSTRUCCIONES_DIA_7.md` — guia de pruebas para esta entrega
+
+- [docs/ESTRUCTURAS_DE_DATOS.md](docs/ESTRUCTURAS_DE_DATOS.md) —
+  explicacion y justificacion tecnica de cada estructura.
+- [docs/INSTRUCCIONES_PRUEBAS.md](docs/INSTRUCCIONES_PRUEBAS.md) —
+  manual de pruebas paso a paso por modulo.

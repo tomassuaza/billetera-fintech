@@ -14,7 +14,7 @@ export default function UsuariosPage() {
       setUsuarios(await usuariosApi.listar())
       setError('')
     } catch (e) {
-      setError(e.message || 'No se pudo conectar al backend en :8080')
+      setError(e.message || 'No se pudo conectar al backend en :8081')
     }
   }
 

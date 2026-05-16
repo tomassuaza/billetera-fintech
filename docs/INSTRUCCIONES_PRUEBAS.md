@@ -28,10 +28,10 @@ Espera el mensaje:
 
 ```
 Started BilleteraApplication in X.XXX seconds
-Tomcat started on port 8080
+Tomcat started on port 8081
 ```
 
-Queda escuchando en `http://localhost:8080`.
+Queda escuchando en `http://localhost:8081`.
 
 ### 1.3 Levantar el frontend
 
@@ -286,7 +286,7 @@ de auditoria y encola una notificacion `FRAUDE_DETECTADO` al usuario.
 - Mira la consola del backend para excepciones de Java
 - Si `npm install` falla, borra `node_modules/` y reintenta
 - Si el frontend no encuentra `/api/...`, asegurate de que el backend
-  esta corriendo en `:8080`
+  esta corriendo en `:8081`
 - Si despues de un cambio en backend no ves el comportamiento esperado,
   detenlo con `Ctrl+C` y vuelve a correr `mvn spring-boot:run` — el
   hot reload solo aplica al frontend
