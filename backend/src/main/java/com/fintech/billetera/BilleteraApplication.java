@@ -7,13 +7,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * Punto de entrada de la aplicacion fintech de billeteras digitales.
  *
  * Este sistema demuestra el uso de las siguientes estructuras de datos:
- * - HashMap (UsuarioRepository, BilleteraRepository, TransaccionRepository)
- * - LinkedList (Historial de transacciones por billetera y por usuario)
- * - ArrayDeque como Pila (Operaciones reversibles)
- * - ArrayDeque como Cola (Notificaciones - dia 9)
- * - PriorityQueue (Operaciones programadas)
- * - TreeMap (Ranking de usuarios por puntos)
- * - Grafo dirigido ponderado (Red de transferencias - dia 10)
+ * - HashMap (UsuarioRepository, BilleteraRepository, TransaccionRepository,
+ *   NotificacionRepository) para acceso por id en O(1).
+ * - LinkedList con addFirst para el historial de transacciones por billetera
+ *   y por usuario (orden cronologico inverso, mas reciente primero).
+ * - ArrayDeque como Pila para las operaciones reversibles por usuario.
+ * - LinkedList como Cola FIFO para el buzon de notificaciones por usuario
+ *   (offer/poll en O(1)).
+ * - PriorityQueue (heap binario) para las operaciones programadas, ordenadas
+ *   por fecha de ejecucion.
+ * - TreeMap (arbol rojo-negro) para el ranking de usuarios por puntos, con
+ *   consultas por rango en O(log n + k).
  */
 @SpringBootApplication
 public class BilleteraApplication {

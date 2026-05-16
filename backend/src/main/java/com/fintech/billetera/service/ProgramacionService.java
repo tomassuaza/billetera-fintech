@@ -25,13 +25,16 @@ public class ProgramacionService {
     private final ProgramacionRepository repo;
     private final TransaccionService transaccionService;
     private final UsuarioRepository usuarioRepo;
+    private final NotificacionService notificacionService;
 
     public ProgramacionService(ProgramacionRepository repo,
                                TransaccionService transaccionService,
-                               UsuarioRepository usuarioRepo) {
+                               UsuarioRepository usuarioRepo,
+                               NotificacionService notificacionService) {
         this.repo = repo;
         this.transaccionService = transaccionService;
         this.usuarioRepo = usuarioRepo;
+        this.notificacionService = notificacionService;
     }
 
     /**
@@ -101,8 +104,13 @@ public class ProgramacionService {
             Usuario u = usuarioRepo.buscarPorId(op.getIdUsuarioGenerador()).orElseThrow();
             u.sumarPuntos(PoliticaPuntos.BONO_PROGRAMADA);
             usuarioRepo.guardar(u);
+
+            notificacionService.emitirProgramadaEjecutada(
+                    op.getIdUsuarioGenerador(), op.getId(), t.getId());
         } catch (Exception e) {
             op.setEstado(EstadoProgramada.FALLIDA);
+            notificacionService.emitirProgramadaFallida(
+                    op.getIdUsuarioGenerador(), op.getId(), e.getMessage());
         }
     }
 

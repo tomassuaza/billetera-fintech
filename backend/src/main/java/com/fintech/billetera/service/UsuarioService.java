@@ -17,10 +17,14 @@ public class UsuarioService {
 
     private final UsuarioRepository repo;
     private final FidelizacionRepository fidelizacionRepo;
+    private final NotificacionService notificacionService;
 
-    public UsuarioService(UsuarioRepository repo, FidelizacionRepository fidelizacionRepo) {
+    public UsuarioService(UsuarioRepository repo,
+                          FidelizacionRepository fidelizacionRepo,
+                          NotificacionService notificacionService) {
         this.repo = repo;
         this.fidelizacionRepo = fidelizacionRepo;
+        this.notificacionService = notificacionService;
     }
 
     public Usuario registrar(String nombre, String correo) {
@@ -32,6 +36,7 @@ public class UsuarioService {
         repo.guardar(u);
         // Registrar en el TreeMap de ranking con 0 puntos
         fidelizacionRepo.actualizarRanking(id, 0, 0);
+        notificacionService.emitirBienvenida(id, nombre);
         return u;
     }
 

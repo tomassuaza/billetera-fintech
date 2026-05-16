@@ -4,6 +4,7 @@ import com.fintech.billetera.domain.Billetera;
 import com.fintech.billetera.domain.Transaccion;
 import com.fintech.billetera.domain.Usuario;
 import com.fintech.billetera.domain.enums.EstadoTransaccion;
+import com.fintech.billetera.domain.enums.NivelUsuario;
 import com.fintech.billetera.domain.enums.TipoTransaccion;
 import com.fintech.billetera.repository.BilleteraRepository;
 import com.fintech.billetera.repository.ReversionRepository;
@@ -26,6 +27,7 @@ import java.util.UUID;
  *  5. Actualiza el ranking del usuario en el TreeMap
  *  6. Apila la transaccion en la pila de reversion del usuario
  *  7. Indexa la transaccion en los historiales (LinkedList)
+ *  8. Emite notificaciones derivadas (saldo bajo, ascenso de nivel)
  */
 @Service
 public class TransaccionService {
@@ -35,17 +37,20 @@ public class TransaccionService {
     private final UsuarioRepository usuarioRepo;
     private final ReversionRepository reversionRepo;
     private final FidelizacionService fidelizacionService;
+    private final NotificacionService notificacionService;
 
     public TransaccionService(TransaccionRepository repo,
                               BilleteraRepository billeteraRepo,
                               UsuarioRepository usuarioRepo,
                               ReversionRepository reversionRepo,
-                              FidelizacionService fidelizacionService) {
+                              FidelizacionService fidelizacionService,
+                              NotificacionService notificacionService) {
         this.repo = repo;
         this.billeteraRepo = billeteraRepo;
         this.usuarioRepo = usuarioRepo;
         this.reversionRepo = reversionRepo;
         this.fidelizacionService = fidelizacionService;
+        this.notificacionService = notificacionService;
     }
 
     // -------------------- RECARGA --------------------
@@ -56,14 +61,14 @@ public class TransaccionService {
      */
     public Transaccion recargar(String idBilletera, BigDecimal monto) {
         Billetera b = obtenerBilleteraActiva(idBilletera);
-        validarMontoPositivo(monto);
+        validarMontoPositivo(b.getIdUsuario(), monto, idBilletera);
 
         b.acreditar(monto);
         billeteraRepo.guardar(b);
 
         Transaccion t = new Transaccion(generarId("TRX"),
                 TipoTransaccion.RECARGA, monto, null, idBilletera, b.getIdUsuario());
-        return finalizarYRegistrar(t, b.getIdUsuario());
+        return finalizarYRegistrar(t, b.getIdUsuario(), b);
     }
 
     // -------------------- RETIRO --------------------
@@ -73,16 +78,18 @@ public class TransaccionService {
      */
     public Transaccion retirar(String idBilletera, BigDecimal monto) {
         Billetera b = obtenerBilleteraActiva(idBilletera);
-        validarMontoPositivo(monto);
+        validarMontoPositivo(b.getIdUsuario(), monto, idBilletera);
 
         if (!b.debitar(monto)) {
+            notificacionService.emitirOperacionRechazada(b.getIdUsuario(),
+                    "Saldo insuficiente en billetera " + b.getNombre(), idBilletera);
             throw new RuntimeException("Saldo insuficiente en billetera " + idBilletera);
         }
         billeteraRepo.guardar(b);
 
         Transaccion t = new Transaccion(generarId("TRX"),
                 TipoTransaccion.RETIRO, monto, idBilletera, null, b.getIdUsuario());
-        return finalizarYRegistrar(t, b.getIdUsuario());
+        return finalizarYRegistrar(t, b.getIdUsuario(), b);
     }
 
     // -------------------- TRANSFERENCIA --------------------
@@ -97,9 +104,12 @@ public class TransaccionService {
         }
         Billetera origen = obtenerBilleteraActiva(idOrigen);
         Billetera destino = obtenerBilleteraActiva(idDestino);
-        validarMontoPositivo(monto);
+        validarMontoPositivo(origen.getIdUsuario(), monto, idOrigen);
 
         if (!origen.debitar(monto)) {
+            notificacionService.emitirOperacionRechazada(origen.getIdUsuario(),
+                    "Saldo insuficiente para transferir desde " + origen.getNombre(),
+                    idOrigen);
             throw new RuntimeException("Saldo insuficiente en billetera " + idOrigen);
         }
         destino.acreditar(monto);
@@ -112,7 +122,7 @@ public class TransaccionService {
 
         Transaccion t = new Transaccion(generarId("TRX"), tipo, monto,
                 idOrigen, idDestino, origen.getIdUsuario());
-        return finalizarYRegistrar(t, origen.getIdUsuario());
+        return finalizarYRegistrar(t, origen.getIdUsuario(), origen);
     }
 
     // -------------------- CONSULTAS --------------------
@@ -136,22 +146,34 @@ public class TransaccionService {
         Billetera b = billeteraRepo.buscarPorId(id)
                 .orElseThrow(() -> new RuntimeException("Billetera no encontrada: " + id));
         if (!b.isActiva()) {
+            notificacionService.emitirOperacionRechazada(b.getIdUsuario(),
+                    "Billetera inactiva: " + b.getNombre(), id);
             throw new RuntimeException("La billetera " + id + " esta inactiva");
         }
         return b;
     }
 
-    private void validarMontoPositivo(BigDecimal monto) {
+    /**
+     * Verifica que el monto sea positivo. Si no, emite notificacion de
+     * rechazo dirigida al usuario duenho de la billetera involucrada.
+     */
+    private void validarMontoPositivo(String idUsuario, BigDecimal monto,
+                                      String idReferencia) {
         if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
+            notificacionService.emitirOperacionRechazada(idUsuario,
+                    "Monto invalido (debe ser mayor a cero)", idReferencia);
             throw new RuntimeException("El monto debe ser mayor a cero");
         }
     }
 
     /**
      * Cierra el ciclo de una transaccion: marca como EXITOSA, calcula
-     * puntos, actualiza ranking, apila para reversion y guarda.
+     * puntos, actualiza ranking, apila para reversion, guarda y emite
+     * las notificaciones derivadas (saldo bajo del origen, ascenso de
+     * nivel del usuario).
      */
-    private Transaccion finalizarYRegistrar(Transaccion t, String idUsuario) {
+    private Transaccion finalizarYRegistrar(Transaccion t, String idUsuario,
+                                            Billetera billeteraImpactada) {
         int puntos = PoliticaPuntos.calcular(t.getTipo(), t.getMonto());
         t.setPuntosGenerados(puntos);
         t.setEstado(EstadoTransaccion.EXITOSA);
@@ -159,12 +181,29 @@ public class TransaccionService {
         Usuario u = usuarioRepo.buscarPorId(idUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + idUsuario));
         int puntosAntes = u.getPuntos();
+        NivelUsuario nivelAntes = u.getNivel();
         u.sumarPuntos(puntos);
         usuarioRepo.guardar(u);
         fidelizacionService.actualizarRanking(u.getId(), puntosAntes, u.getPuntos());
 
         repo.guardar(t);
         reversionRepo.apilar(idUsuario, t);
+
+        // Notificaciones derivadas
+        if (nivelAntes != u.getNivel()) {
+            notificacionService.emitirAscensoNivel(idUsuario, nivelAntes, u.getNivel());
+        }
+        // El saldo bajo solo aplica cuando el saldo de la billetera
+        // disminuye (retiros y transferencias salientes). En recargas no
+        // tiene sentido alertar.
+        if (t.getTipo() != TipoTransaccion.RECARGA
+                && billeteraImpactada.getSaldo()
+                        .compareTo(NotificacionService.UMBRAL_SALDO_BAJO) < 0) {
+            notificacionService.emitirSaldoBajo(idUsuario,
+                    billeteraImpactada.getId(),
+                    billeteraImpactada.getNombre(),
+                    billeteraImpactada.getSaldo());
+        }
         return t;
     }
 
