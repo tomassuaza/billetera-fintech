@@ -55,7 +55,12 @@ Queda en `http://localhost:5173`.
 
 ## Documentacion
 
+- [docs/INFORME_TECNICO.md](docs/INFORME_TECNICO.md) — informe final
+  con descripcion del problema, arquitectura, justificacion de
+  decisiones y cobertura del enunciado.
 - [docs/ESTRUCTURAS_DE_DATOS.md](docs/ESTRUCTURAS_DE_DATOS.md) —
   explicacion y justificacion tecnica de cada estructura.
+- [docs/DIAGRAMA_CLASES.md](docs/DIAGRAMA_CLASES.md) — diagramas de
+  clases y de capas en formato Mermaid.
 - [docs/INSTRUCCIONES_PRUEBAS.md](docs/INSTRUCCIONES_PRUEBAS.md) —
   manual de pruebas paso a paso por modulo.
