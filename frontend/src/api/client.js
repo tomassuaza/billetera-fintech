@@ -66,3 +66,14 @@ export const notificacionesApi = {
   despachar: (idUsuario) => api.post(`/notificaciones/usuario/${idUsuario}/despachar`).then(r => r.data),
   sacarSiguiente: (idUsuario) => api.post(`/notificaciones/usuario/${idUsuario}/sacar-siguiente`).then(r => r.data),
 }
+
+export const grafoApi = {
+  aristas: () => api.get('/grafo/aristas').then(r => r.data),
+  salientes: (id) => api.get(`/grafo/usuario/${id}/salientes`).then(r => r.data),
+  vecinos: (id) => api.get(`/grafo/usuario/${id}/vecinos`).then(r => r.data),
+  amigosDeAmigos: (id) => api.get(`/grafo/usuario/${id}/amigos-de-amigos`).then(r => r.data),
+  alcance: (id, profundidad = 3) => api.get(`/grafo/usuario/${id}/alcance?profundidad=${profundidad}`).then(r => r.data),
+  camino: (origen, destino) => api.get(`/grafo/camino?origen=${origen}&destino=${destino}`).then(r => r.data),
+  rutasFrecuentes: (top = 5) => api.get(`/grafo/rutas-frecuentes?top=${top}`).then(r => r.data),
+  ciclos: () => api.get('/grafo/ciclos').then(r => r.data),
+}
