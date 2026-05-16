@@ -222,7 +222,65 @@ dentro de la misma persona.
 
 ---
 
-## 9. Recuperacion ante errores
+## 9. Analitica
+
+La pagina **Analitica** del menu agrupa los reportes que el sistema
+genera sobre el conjunto de transacciones. Es un panel de solo lectura.
+
+### Que verificar
+1. Crea actividad ejecutando varias recargas, retiros y transferencias
+   entre tus usuarios.
+2. Abre **Analitica** y revisa:
+   - **Frecuencia por tipo**: las barras reflejan cuantas RECARGAS,
+     RETIROS y TRANSFERENCIAS hubo. La suma cuadra con el total.
+   - **Categorias de billetera**: conteo por tipo (AHORRO,
+     GASTOS_DIARIOS, etc).
+   - **Top usuarios mas activos** y **Top billeteras mas activas**:
+     ranking descendente por numero de transacciones.
+   - **Monto movilizado en un rango**: ajusta las fechas y dale
+     "Recalcular" — el panel actualiza total, conteo y desglose por tipo.
+   - **Top transacciones por valor**: tabla ordenada con un `TreeSet`
+     descendente por monto. Tras revertir una transaccion grande
+     deberia bajar del top.
+
+---
+
+## 10. Deteccion de patrones inusuales (auditoria)
+
+El modulo de fraude se ejecuta automaticamente cada vez que se crea
+una transaccion exitosa. Si alguna regla se activa, marca la
+transaccion con un nivel de riesgo, registra un evento en el historial
+de auditoria y encola una notificacion `FRAUDE_DETECTADO` al usuario.
+
+### Reglas y como activarlas
+1. **Rafaga (NIVEL MEDIO):** haz 4 o mas transferencias del mismo
+   usuario en menos de 5 minutos. La cuarta se marca como riesgo MEDIO.
+2. **Monto atipico (NIVEL BAJO):** haz primero varias transacciones
+   con montos pequenos (ej. $5.000 cada una) y despues una grande
+   (ej. $100.000). La grande supera el promedio por mas de 5x.
+3. **Mismo destino repetido (NIVEL MEDIO):** envia tres o mas
+   transferencias hacia la misma billetera destino en menos de 10
+   minutos.
+4. **Fragmentacion (NIVEL ALTO):** desde dos billeteras propias
+   distintas, envia transferencias hacia la misma billetera destino en
+   menos de 10 minutos.
+
+### Que verificar
+5. Despues de activar una regla, abre el detalle de la billetera
+   involucrada — la transaccion sospechosa aparece con una etiqueta
+   `riesgo MEDIO/ALTO` (color amarillo/naranja/rojo). Pasar el mouse
+   muestra el motivo.
+6. Abre la pagina **Auditoria** desde el menu: el evento aparece en el
+   historial con regla, nivel y detalle. Los contadores en la parte
+   superior muestran cuantos eventos hay por nivel.
+7. Abre la campanita de notificaciones del usuario afectado — debe
+   tener un `FRAUDE_DETECTADO` correspondiente.
+8. Filtra por usuario o por nivel en la pagina Auditoria para acotar
+   la vista.
+
+---
+
+## 11. Recuperacion ante errores
 
 - Mira la consola del navegador (F12) para errores de red
 - Mira la consola del backend para excepciones de Java

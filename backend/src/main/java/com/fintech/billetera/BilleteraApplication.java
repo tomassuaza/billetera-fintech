@@ -21,6 +21,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * - Grafo dirigido y ponderado (lista de adyacencia) para la red de
  *   transferencias entre usuarios. Soporta BFS, deteccion de ciclos y
  *   busqueda de rutas frecuentes.
+ * - TreeSet con comparador descendente para obtener las transacciones
+ *   de mayor valor (modulo de analitica).
+ * - LinkedList separada para el historial de auditoria del modulo de
+ *   deteccion de patrones inusuales.
  */
 @SpringBootApplication
 public class BilleteraApplication {

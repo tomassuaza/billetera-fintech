@@ -86,3 +86,9 @@ export const analiticaApi = {
   montoEnRango: (desde, hasta) => api.get(`/analitica/monto-rango?desde=${desde}&hasta=${hasta}`).then(r => r.data),
   topPorValor: (top = 5) => api.get(`/analitica/top-valor?top=${top}`).then(r => r.data),
 }
+
+export const auditoriaApi = {
+  eventos: () => api.get('/auditoria/eventos').then(r => r.data),
+  porUsuario: (idUsuario) => api.get(`/auditoria/usuario/${idUsuario}`).then(r => r.data),
+  total: () => api.get('/auditoria/total').then(r => r.data),
+}

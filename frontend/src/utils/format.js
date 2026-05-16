@@ -71,3 +71,10 @@ export const labelTipoNotificacion = {
   PROGRAMADA_FALLIDA: 'Programada fallida',
   FRAUDE_DETECTADO: 'Fraude detectado',
 }
+
+export const colorPorNivelRiesgo = {
+  NINGUNO: 'bg-slate-100 text-slate-600 border-slate-200',
+  BAJO: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  MEDIO: 'bg-orange-50 text-orange-700 border-orange-200',
+  ALTO: 'bg-red-50 text-red-700 border-red-200',
+}

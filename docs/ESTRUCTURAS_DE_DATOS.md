@@ -284,6 +284,79 @@ transferencia y reversion.
 
 ---
 
+## 8. TreeSet con comparador — Top transacciones por valor
+
+**Donde:** `AnaliticaService.topTransaccionesPorValor`, atributo local
+`TreeSet<Transaccion>` con un `Comparator` que ordena por monto
+descendente y desempata por id.
+
+**Que es:** Un `TreeSet` es un conjunto ordenado implementado sobre un
+arbol rojo-negro. Al insertar elementos, el arbol se rebalancea para
+mantener el orden total definido por el `Comparator` provisto. Iterarlo
+los entrega ya ordenados.
+
+**Por que aqui:** Para devolver las N transacciones de mayor valor
+podriamos volcar toda la lista a un `ArrayList`, ordenarla con
+`Collections.sort` (O(n log n)) y tomar las N primeras. La alternativa
+con `TreeSet` permite ir manteniendo el orden a medida que se insertan
+los elementos: la insercion es O(log n) por elemento y el recorrido
+para tomar el top es O(N). El resultado es equivalente para una sola
+consulta pero estructuralmente declara la intencion mejor ("este
+conjunto se quiere mantener ordenado por monto").
+
+**Por que el desempate por id:** Si dos transacciones tienen el mismo
+monto, `TreeSet` consideraria que son la misma y descartaria una de
+ellas. Agregar el id como segundo criterio del `Comparator` garantiza
+unicidad sin perder el orden principal.
+
+**Complejidad:**
+- `add(transaccion)`: O(log n)
+- Recorrido completo: O(n)
+- Tomar top N: O(N)
+
+---
+
+## 9. Lista enlazada para historial de auditoria
+
+**Donde:** `AuditoriaRepository`, atributo
+`historial: LinkedList<EventoAuditoria>` mas indice
+`porUsuario: Map<String, LinkedList<EventoAuditoria>>`.
+
+**Que es:** Misma estructura que el historial de transacciones (seccion 2)
+pero dedicada a los eventos generados por el modulo de deteccion de
+patrones inusuales. Cada evento referencia la transaccion que lo
+disparo, la regla activada, el nivel asignado y el detalle.
+
+**Por que separar la auditoria del historial de transacciones:** Una
+transaccion sospechosa sigue siendo una transaccion legitima en cuanto
+a saldo y movimiento de dinero — solo lleva una etiqueta de riesgo.
+Los eventos de auditoria son metadata adicional: su consulta no debe
+recorrer todas las transacciones para filtrar las marcadas. Mantenerlos
+en una estructura propia da O(1) para registrar y O(k) para consultar
+solo los k eventos de un usuario.
+
+**Reglas implementadas en FraudeService:**
+- **Rafaga:** N transferencias en ventana corta (por defecto 4 en 5 min)
+- **Monto atipico:** transaccion mayor al promedio del usuario por un
+  factor (por defecto 5x)
+- **Mismo destino repetido:** N envios al mismo destino en ventana corta
+  (por defecto 3 en 10 min)
+- **Fragmentacion:** uso de varias billeteras propias hacia el mismo
+  destino en ventana corta (por defecto 2 billeteras en 10 min)
+
+Cuando una regla se activa: la transaccion sube su `NivelRiesgo`, se
+registra un `EventoAuditoria` y se emite una notificacion
+`FRAUDE_DETECTADO` en el buzon del usuario (reutiliza la cola FIFO de
+la seccion 6).
+
+**Complejidad:**
+- `registrar(evento)`: O(1)
+- `listarTodo()` / `listarPorUsuario(id)`: O(k)
+- `analizar(transaccion)`: O(h) donde h = tamano del historial reciente
+  del usuario (las reglas filtran por ventana temporal)
+
+---
+
 ## Resumen visual de la asignacion
 
 | Modulo                       | Estructura     | Justificacion clave             |
@@ -295,3 +368,5 @@ transferencia y reversion.
 | Notificaciones por usuario   | LinkedList Q   | FIFO offer/poll O(1)            |
 | Ranking de fidelizacion      | TreeMap        | Consultas por rango O(log n+k)  |
 | Red de transferencias        | Grafo (lista)  | BFS/DFS O(V+E), espacio O(V+E)  |
+| Top transacciones por valor  | TreeSet        | Orden por monto con comparador  |
+| Historial de auditoria       | LinkedList     | addFirst O(1) por evento        |

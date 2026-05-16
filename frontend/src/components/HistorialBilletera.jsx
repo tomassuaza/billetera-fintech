@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { transaccionesApi } from '../api/client'
 import {
   formatMoney, formatDate,
-  colorPorTipoTransaccion, labelTipoTransaccion
+  colorPorTipoTransaccion, labelTipoTransaccion,
+  colorPorNivelRiesgo,
 } from '../utils/format'
 
 /**
@@ -63,8 +64,18 @@ export default function HistorialBilletera({ idBilletera, refreshKey }) {
                   {t.id}
                 </div>
                 {t.estado !== 'EXITOSA' && t.estado !== 'PENDIENTE' && (
-                  <span className="inline-block text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 mt-1">
+                  <span className="inline-block text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 mt-1 mr-1">
                     {t.estado}
+                  </span>
+                )}
+                {t.nivelRiesgo && t.nivelRiesgo !== 'NINGUNO' && (
+                  <span
+                    className={`inline-block text-[10px] px-2 py-0.5 rounded border mt-1 ${
+                      colorPorNivelRiesgo[t.nivelRiesgo] || ''
+                    }`}
+                    title={t.motivoRiesgo || ''}
+                  >
+                    riesgo {t.nivelRiesgo}
                   </span>
                 )}
               </div>
