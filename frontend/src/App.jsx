@@ -17,6 +17,7 @@ export default function App() {
             <NavLink to="/" className={linkClass} end>Usuarios</NavLink>
             <NavLink to="/programadas" className={linkClass}>Programadas</NavLink>
             <NavLink to="/ranking" className={linkClass}>Ranking</NavLink>
+            <NavLink to="/notificaciones" className={linkClass}>Notificaciones</NavLink>
           </nav>
         </div>
       </header>

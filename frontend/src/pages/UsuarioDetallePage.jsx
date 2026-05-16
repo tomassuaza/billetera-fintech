@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { usuariosApi, billeterasApi, transaccionesApi } from '../api/client'
 import { colorPorTipoBilletera, colorPorNivel, formatMoney } from '../utils/format'
+import CampanaNotificaciones from '../components/CampanaNotificaciones'
 
 const TIPOS = ['AHORRO', 'GASTOS_DIARIOS', 'COMPRAS', 'TRANSPORTE', 'INVERSION']
 
@@ -99,14 +100,17 @@ export default function UsuarioDetallePage() {
                   </span>
                 </div>
               </div>
-              <div className="text-right">
-                <button
-                  onClick={deshacerUltima}
-                  disabled={reversibles === 0}
-                  className="bg-amber-600 hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-3 py-2 rounded text-sm">
-                  ⤺ Deshacer ultima ({reversibles})
-                </button>
-                <p className="text-xs text-slate-400 mt-1">Pila de reversion</p>
+              <div className="flex items-start gap-3">
+                <CampanaNotificaciones idUsuario={id} />
+                <div className="text-right">
+                  <button
+                    onClick={deshacerUltima}
+                    disabled={reversibles === 0}
+                    className="bg-amber-600 hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-3 py-2 rounded text-sm">
+                    ⤺ Deshacer ultima ({reversibles})
+                  </button>
+                  <p className="text-xs text-slate-400 mt-1">Pila de reversion</p>
+                </div>
               </div>
             </div>
           </div>

@@ -1,0 +1,194 @@
+# Manual de pruebas del sistema
+
+Documento de referencia para verificar manualmente el funcionamiento de
+todos los modulos de la plataforma. Cada seccion cubre una capacidad
+del sistema con un plan de pruebas paso a paso.
+
+---
+
+## 1. Setup inicial
+
+### 1.1 Estructura del proyecto
+
+```
+billetera-fintech/
+├── backend/        Spring Boot 3 + Java 17 + Maven
+├── frontend/       React + Vite + Tailwind
+└── docs/           Documentacion tecnica y manual de pruebas
+```
+
+### 1.2 Levantar el backend
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+Espera el mensaje:
+
+```
+Started BilleteraApplication in X.XXX seconds
+Tomcat started on port 8080
+```
+
+Queda escuchando en `http://localhost:8080`.
+
+### 1.3 Levantar el frontend
+
+En otra terminal:
+
+```bash
+cd frontend
+npm install   # solo la primera vez
+npm run dev
+```
+
+Queda en `http://localhost:5173`. El frontend tiene **hot reload**: al
+modificar un archivo `.jsx` el navegador se refresca solo.
+
+### 1.4 Notas de macOS
+
+Si descomprimes el proyecto desde un zip en `~/Downloads`, macOS puede
+crear una carpeta `billetera-fintech 2` si ya existia una. Trabajar
+siempre sobre la version mas reciente y borrar las duplicadas.
+
+---
+
+## 2. Gestion de usuarios y billeteras
+
+### Crear datos base
+1. Abre `http://localhost:5173`
+2. Registra dos usuarios (ej. "Juan Lopez", "Maria Garcia")
+3. Entra al detalle de Juan, crea dos billeteras: una de **Ahorro** y
+   una de **Gastos diarios**
+4. Entra al detalle de Maria, crea una billetera de **Compras**
+
+### Activar / desactivar billeteras
+5. Desde el detalle del usuario, click en "Desactivar" en una billetera
+6. Intenta operar contra ella → debe rechazar y generar notificacion
+   `OPERACION_RECHAZADA`
+7. Vuelve a activarla y reintenta
+
+---
+
+## 3. Operaciones financieras
+
+### Recarga, retiro y transferencia
+1. Abre el detalle de la billetera de Ahorro de Juan
+2. **Recarga** $50.000 → veras el saldo y la transaccion en el historial
+3. Recarga otra vez $30.000 → 2 transacciones en historial
+4. Intenta **retirar** mas de lo que hay → debe fallar y generar
+   notificacion de operacion rechazada
+5. **Transfiere** desde Ahorro de Juan a Gastos diarios de Juan
+   ($20.000) → debe quedar como `TRANSFERENCIA_INTERNA`
+6. **Transfiere** desde Ahorro de Juan a Compras de Maria ($15.000) →
+   debe quedar como `TRANSFERENCIA_EXTERNA`
+
+### Verificacion visual
+- El historial siempre muestra mas reciente arriba (LinkedList con
+  `addFirst`).
+- Cada operacion exitosa aumenta los puntos del usuario que la genera.
+
+---
+
+## 4. Reversion de operaciones (pila)
+
+1. Vuelve al detalle de Juan. Veras "Deshacer ultima (N)" donde N es
+   la cantidad de operaciones reversibles
+2. Click en deshacer → la ultima transaccion se revierte y se crea un
+   movimiento de tipo `REVERSION` en el historial. El saldo se ajusta.
+3. Las operaciones revertidas aparecen tachadas en el historial.
+4. Verifica que los puntos del usuario disminuyen al revertir (la pila
+   de reversion es LIFO sobre `ArrayDeque`).
+
+---
+
+## 5. Sistema de puntos y niveles (TreeMap)
+
+1. Mira el contador de puntos del usuario tras varias operaciones
+   - Recarga: 1pt / 100 unidades
+   - Retiro: 2pt / 100 unidades
+   - Transferencia: 3pt / 100 unidades
+   - Bono por programada ejecutada: +10 pts
+2. Ve a la pagina **Ranking** desde el menu — el usuario con mas puntos
+   aparece arriba
+3. Prueba el filtro por rango (ej. min=0, max=500) — usa `subMap` del
+   TreeMap por debajo: O(log n + k)
+4. Verifica el **conteo por nivel** (Bronce 0-500, Plata 501-1000, Oro
+   1001-5000, Platino +5000)
+5. Confirma que el nivel del usuario cambia al cruzar cada umbral —
+   genera notificacion automatica `ASCENSO_NIVEL`
+
+---
+
+## 6. Operaciones programadas (PriorityQueue)
+
+1. Ve a **Programadas** desde el menu
+2. Programa una **RECARGA** para fecha **pasada** (ej. ayer)
+3. Programa otra **RECARGA** para fecha **futura** (ej. dentro de 1 hora)
+4. Click en **Ejecutar vencidas** — solo se ejecuta la que ya paso. El
+   PriorityQueue mantiene el orden por fecha en la cabeza.
+5. La que esta en futuro queda pendiente. Pruebala con el boton
+   **Ejecutar** individual
+6. Cada ejecucion exitosa:
+   - Genera el movimiento real en el historial
+   - Suma el bono de puntos al usuario
+   - Encola una notificacion `PROGRAMADA_EJECUTADA`
+7. Si la ejecucion falla (por ej. saldo insuficiente), se marca como
+   `FALLIDA` y se encola `PROGRAMADA_FALLIDA`
+
+### Orden en pantalla
+Las pendientes aparecen ordenadas por fecha. El PriorityQueue solo
+garantiza la cabeza ordenada, asi que el listado completo se obtiene
+copiando y ordenando (`Collections.sort`).
+
+---
+
+## 7. Notificaciones (Cola FIFO)
+
+### Bienvenida
+1. Registra un usuario nuevo (ej. "Andres Test")
+2. Ve a su detalle → veras la **campanita** con un "1" rojo arriba
+3. Click en la campanita → aparece la notificacion `BIENVENIDA`
+
+### Saldo bajo
+4. Haz un retiro grande que deje la billetera con menos de $10.000
+5. Aparece notificacion `SALDO_BAJO` referenciando esa billetera
+
+### Operacion rechazada
+6. Intenta retirar mas del saldo disponible o usar una billetera
+   inactiva
+7. La operacion falla y se encola `OPERACION_RECHAZADA`
+
+### Ascenso de nivel
+8. Haz recargas y/o transferencias hasta que el usuario supere los 500
+   puntos (BRONCE → PLATA)
+9. Aparece notificacion `ASCENSO_NIVEL`
+
+### Pagina global de notificaciones
+10. Click en **Notificaciones** en el menu superior
+11. Selecciona el usuario en el dropdown → ves todas sus notificaciones
+12. Filtra por tipo (ej. solo "Saldo bajo")
+13. Click en **Despachar FIFO** → drena todas las no leidas en orden
+    de llegada (de la mas antigua a la mas reciente)
+14. Las marcadas quedan tenues (opacidad reducida)
+
+### Verificacion del comportamiento FIFO
+En la pagina **Notificaciones**, las notificaciones se muestran con la
+mas reciente arriba para comodidad visual. La cola interna almacena de
+mas antigua a mas reciente: al despachar, se procesan **en orden
+inverso al que ves en pantalla**, confirmando el FIFO. El alert
+indica cuantas se despacharon.
+
+---
+
+## 8. Recuperacion ante errores
+
+- Mira la consola del navegador (F12) para errores de red
+- Mira la consola del backend para excepciones de Java
+- Si `npm install` falla, borra `node_modules/` y reintenta
+- Si el frontend no encuentra `/api/...`, asegurate de que el backend
+  esta corriendo en `:8080`
+- Si despues de un cambio en backend no ves el comportamiento esperado,
+  detenlo con `Ctrl+C` y vuelve a correr `mvn spring-boot:run` — el
+  hot reload solo aplica al frontend

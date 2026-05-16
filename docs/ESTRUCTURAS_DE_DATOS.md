@@ -168,6 +168,59 @@ involucra dos operaciones logaritmicas en el arbol.
 
 ---
 
+## 6. LinkedList como Cola FIFO — Buzon de notificaciones
+
+**Donde:** `NotificacionRepository`, atributo
+`buzones: Map<String, LinkedList<Notificacion>>` (un buzon por usuario)
+e indice global `porId: Map<String, Notificacion>` para acceso O(1) al
+marcar leidas.
+
+**Que es:** Una Cola (Queue) FIFO mantiene el orden de llegada: el
+primer elemento en entrar es el primero en salir. Java implementa la
+interfaz `Queue` con metodos `offer` (encolar al final) y `poll` (sacar
+del frente), ambos O(1) sobre `LinkedList`.
+
+**Por que aqui:** Las notificaciones se procesan en el orden en que
+ocurrieron (las mas antiguas primero), no en el orden inverso al
+historial. Cuando el frontend pide "despachar" el buzon, drena de la
+cabeza hacia la cola — comportamiento exacto de una cola FIFO.
+
+**Por que LinkedList y no ArrayDeque:** Ambas implementan `Queue` y
+ambas dan O(1) en `offer/poll`. ArrayDeque es ligeramente mas eficiente
+en memoria, pero LinkedList expresa mejor el concepto academico de
+"cola encadenada" y permite iterar snapshots ordenados (`new
+ArrayList(cola)`) sin perder el orden FIFO. La diferencia practica es
+despreciable para el volumen del proyecto.
+
+**Diferencia clave con la LinkedList de historial (seccion 2):** En el
+historial usamos `addFirst()` porque el orden deseado es LIFO visual
+(mas reciente arriba). En notificaciones usamos `offer()` (que es
+`addLast`) porque el orden deseado es FIFO (procesar primero las que
+llevan mas tiempo esperando). La misma clase Java, dos contratos
+distintos segun la operacion que invoquemos.
+
+**Emisores del sistema:** El servicio facade `NotificacionService` es
+llamado por:
+- `UsuarioService.registrar` → BIENVENIDA
+- `TransaccionService.finalizarYRegistrar` → SALDO_BAJO (si la
+  billetera origen quedo bajo umbral) y ASCENSO_NIVEL (si el usuario
+  cambio de nivel)
+- `TransaccionService` validaciones → OPERACION_RECHAZADA (saldo
+  insuficiente, monto invalido, billetera inactiva)
+- `ProgramacionService.ejecutarUna` → PROGRAMADA_EJECUTADA o
+  PROGRAMADA_FALLIDA segun resultado
+
+**Complejidad:**
+- `encolar` (offer): O(1) — `HashMap.get` + `LinkedList.addLast`
+- `desencolarSiguiente` (poll): O(1)
+- `pico` (peek): O(1)
+- `pendientes`: O(k) — recorre la cola contando no leidas
+- `marcarLeida(id)`: O(1) — usa el indice `porId`
+- `drenarPendientes` (despachar todo): O(k)
+- `eliminar(id)`: O(k) — `LinkedList.remove(Object)` recorre
+
+---
+
 ## Resumen visual de la asignacion
 
 | Modulo                       | Estructura     | Justificacion clave             |
@@ -176,19 +229,5 @@ involucra dos operaciones logaritmicas en el arbol.
 | Historial de transacciones   | LinkedList     | addFirst O(1)                   |
 | Reversion (deshacer)         | ArrayDeque     | LIFO O(1)                       |
 | Operaciones programadas      | PriorityQueue  | Orden por fecha (heap)          |
+| Notificaciones por usuario   | LinkedList Q   | FIFO offer/poll O(1)            |
 | Ranking de fidelizacion      | TreeMap        | Consultas por rango O(log n+k)  |
-
----
-
-## Pendientes para los proximos dias (8-15)
-
-- **Cola (`ArrayDeque` como Queue) + Notificaciones** (dia 9) — buzon
-  por usuario con `offer` y `poll`.
-- **Grafo dirigido ponderado** (dia 10) — red de transferencias entre
-  usuarios. Lista de adyacencia con `HashMap<Usuario, List<Arista>>`.
-  Operaciones: BFS para "amigos de amigos", deteccion de ciclos.
-- **Analitica** (dia 11) — top de usuarios mas activos, billeteras con
-  mas transacciones, etc.
-- **Deteccion de fraude** (dia 11) — reglas tipo "demasiadas
-  transferencias en corto tiempo" usando ventanas temporales sobre los
-  historiales.

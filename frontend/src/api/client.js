@@ -57,3 +57,12 @@ export const fidelizacionApi = {
   porNivel: (nivel) => api.get(`/fidelizacion/nivel/${nivel}`).then(r => r.data),
   conteo: () => api.get('/fidelizacion/conteo').then(r => r.data),
 }
+
+export const notificacionesApi = {
+  listarPorUsuario: (idUsuario) => api.get(`/notificaciones/usuario/${idUsuario}`).then(r => r.data),
+  pendientes: (idUsuario) => api.get(`/notificaciones/usuario/${idUsuario}/pendientes`).then(r => r.data),
+  marcarLeida: (id) => api.post(`/notificaciones/${id}/leer`).then(r => r.data),
+  marcarTodasLeidas: (idUsuario) => api.post(`/notificaciones/usuario/${idUsuario}/leer-todas`).then(r => r.data),
+  despachar: (idUsuario) => api.post(`/notificaciones/usuario/${idUsuario}/despachar`).then(r => r.data),
+  sacarSiguiente: (idUsuario) => api.post(`/notificaciones/usuario/${idUsuario}/sacar-siguiente`).then(r => r.data),
+}
