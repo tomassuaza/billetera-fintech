@@ -9,6 +9,7 @@ import ProgramadasPage from './pages/ProgramadasPage.jsx'
 import RankingPage from './pages/RankingPage.jsx'
 import NotificacionesPage from './pages/NotificacionesPage.jsx'
 import RedTransferenciasPage from './pages/RedTransferenciasPage.jsx'
+import AnaliticaPage from './pages/AnaliticaPage.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="ranking" element={<RankingPage />} />
           <Route path="notificaciones" element={<NotificacionesPage />} />
           <Route path="red" element={<RedTransferenciasPage />} />
+          <Route path="analitica" element={<AnaliticaPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

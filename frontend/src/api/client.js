@@ -77,3 +77,12 @@ export const grafoApi = {
   rutasFrecuentes: (top = 5) => api.get(`/grafo/rutas-frecuentes?top=${top}`).then(r => r.data),
   ciclos: () => api.get('/grafo/ciclos').then(r => r.data),
 }
+
+export const analiticaApi = {
+  usuariosActivos: (top = 5) => api.get(`/analitica/usuarios-activos?top=${top}`).then(r => r.data),
+  billeterasActivas: (top = 5) => api.get(`/analitica/billeteras-activas?top=${top}`).then(r => r.data),
+  frecuenciaPorTipo: () => api.get('/analitica/frecuencia-por-tipo').then(r => r.data),
+  categoriasBilletera: () => api.get('/analitica/categorias-billetera').then(r => r.data),
+  montoEnRango: (desde, hasta) => api.get(`/analitica/monto-rango?desde=${desde}&hasta=${hasta}`).then(r => r.data),
+  topPorValor: (top = 5) => api.get(`/analitica/top-valor?top=${top}`).then(r => r.data),
+}
