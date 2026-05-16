@@ -38,19 +38,22 @@ public class TransaccionService {
     private final ReversionRepository reversionRepo;
     private final FidelizacionService fidelizacionService;
     private final NotificacionService notificacionService;
+    private final GrafoService grafoService;
 
     public TransaccionService(TransaccionRepository repo,
                               BilleteraRepository billeteraRepo,
                               UsuarioRepository usuarioRepo,
                               ReversionRepository reversionRepo,
                               FidelizacionService fidelizacionService,
-                              NotificacionService notificacionService) {
+                              NotificacionService notificacionService,
+                              GrafoService grafoService) {
         this.repo = repo;
         this.billeteraRepo = billeteraRepo;
         this.usuarioRepo = usuarioRepo;
         this.reversionRepo = reversionRepo;
         this.fidelizacionService = fidelizacionService;
         this.notificacionService = notificacionService;
+        this.grafoService = grafoService;
     }
 
     // -------------------- RECARGA --------------------
@@ -122,6 +125,13 @@ public class TransaccionService {
 
         Transaccion t = new Transaccion(generarId("TRX"), tipo, monto,
                 idOrigen, idDestino, origen.getIdUsuario());
+
+        // Solo las transferencias entre usuarios distintos viven en el
+        // grafo. Las internas mueven dinero dentro de la misma persona.
+        if (tipo == TipoTransaccion.TRANSFERENCIA_EXTERNA) {
+            grafoService.registrarTransferencia(
+                    origen.getIdUsuario(), destino.getIdUsuario(), monto);
+        }
         return finalizarYRegistrar(t, origen.getIdUsuario(), origen);
     }
 

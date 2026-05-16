@@ -32,17 +32,20 @@ public class ReversionService {
     private final BilleteraRepository billeteraRepo;
     private final UsuarioRepository usuarioRepo;
     private final FidelizacionService fidelizacionService;
+    private final GrafoService grafoService;
 
     public ReversionService(ReversionRepository pilaRepo,
                             TransaccionRepository transRepo,
                             BilleteraRepository billeteraRepo,
                             UsuarioRepository usuarioRepo,
-                            FidelizacionService fidelizacionService) {
+                            FidelizacionService fidelizacionService,
+                            GrafoService grafoService) {
         this.pilaRepo = pilaRepo;
         this.transRepo = transRepo;
         this.billeteraRepo = billeteraRepo;
         this.usuarioRepo = usuarioRepo;
         this.fidelizacionService = fidelizacionService;
+        this.grafoService = grafoService;
     }
 
     /**
@@ -91,6 +94,17 @@ public class ReversionService {
         // 3. Marcar la original como REVERTIDA
         original.setEstado(EstadoTransaccion.REVERTIDA);
         transRepo.guardar(original);
+
+        // 3b. Si la transaccion vivia en el grafo (transferencia externa),
+        // descontarla para que la red refleje la realidad.
+        if (original.getTipo() == TipoTransaccion.TRANSFERENCIA_EXTERNA) {
+            Billetera origenBil = billeteraRepo.buscarPorId(original.getIdBilleteraOrigen())
+                    .orElseThrow(() -> new RuntimeException("Billetera origen no encontrada"));
+            Billetera destinoBil = billeteraRepo.buscarPorId(original.getIdBilleteraDestino())
+                    .orElseThrow(() -> new RuntimeException("Billetera destino no encontrada"));
+            grafoService.revertirTransferencia(
+                    origenBil.getIdUsuario(), destinoBil.getIdUsuario(), original.getMonto());
+        }
 
         // 4. Crear transaccion de tipo REVERSION (espejo, no reversible)
         Transaccion reversion = new Transaccion(
