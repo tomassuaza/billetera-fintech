@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Modal from './Modal'
-import { transaccionesApi, billeterasApi } from '../api/client'
+import { transaccionesApi, billeterasApi, usuariosApi } from '../api/client'
 import { formatMoney } from '../utils/format'
 
 /**
- * Modal para transferir entre billeteras.
- * Lista todas las billeteras del sistema (excepto la actual) como destino.
+ * Modal para transferir entre billeteras. Lista todas las billeteras
+ * activas del sistema (excepto la actual), agrupadas por titular, para
+ * que sea evidente cuales son del mismo usuario y cuales pertenecen a
+ * otros (transferencia interna vs externa).
  */
 export default function TransferirModal({ open, onClose, billetera, onSuccess }) {
   const [destinos, setDestinos] = useState([])
+  const [usuarios, setUsuarios] = useState([])
   const [idDestino, setIdDestino] = useState('')
   const [monto, setMonto] = useState('')
   const [error, setError] = useState('')
@@ -16,10 +19,31 @@ export default function TransferirModal({ open, onClose, billetera, onSuccess })
 
   useEffect(() => {
     if (!open) return
-    billeterasApi.listar().then(lista => {
-      setDestinos(lista.filter(b => b.id !== billetera?.id && b.activa))
-    }).catch(e => setError(e.message))
+    setError('')
+    Promise.all([billeterasApi.listar(), usuariosApi.listar()])
+      .then(([listaBilleteras, listaUsuarios]) => {
+        setDestinos(listaBilleteras.filter(b => b.id !== billetera?.id && b.activa))
+        setUsuarios(listaUsuarios)
+      })
+      .catch(e => setError(e.message))
   }, [open, billetera])
+
+  const grupos = useMemo(() => {
+    const nombrePorId = new Map(usuarios.map(u => [u.id, u.nombre]))
+    const mias = []
+    const otras = []
+    destinos.forEach(b => {
+      const item = { ...b, nombreTitular: nombrePorId.get(b.idUsuario) || b.idUsuario }
+      if (b.idUsuario === billetera?.idUsuario) mias.push(item)
+      else otras.push(item)
+    })
+    // Ordenar las de otros usuarios por nombre del titular
+    otras.sort((a, b) => a.nombreTitular.localeCompare(b.nombreTitular))
+    return { mias, otras }
+  }, [destinos, usuarios, billetera])
+
+  const seleccionada = destinos.find(d => d.id === idDestino)
+  const esExterna = seleccionada && seleccionada.idUsuario !== billetera?.idUsuario
 
   const submit = async (e) => {
     e.preventDefault()
@@ -56,14 +80,35 @@ export default function TransferirModal({ open, onClose, billetera, onSuccess })
         </label>
         <select required value={idDestino}
           onChange={e => setIdDestino(e.target.value)}
-          className="w-full border border-slate-300 rounded px-3 py-2 mb-4">
+          className="w-full border border-slate-300 rounded px-3 py-2 mb-2">
           <option value="">— Selecciona una billetera —</option>
-          {destinos.map(d => (
-            <option key={d.id} value={d.id}>
-              {d.nombre} ({d.id}) — {formatMoney(d.saldo)}
-            </option>
-          ))}
+          {grupos.mias.length > 0 && (
+            <optgroup label="Mis billeteras (transferencia interna)">
+              {grupos.mias.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.nombre} — {formatMoney(d.saldo)}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {grupos.otras.length > 0 && (
+            <optgroup label="Billeteras de otros usuarios (transferencia externa)">
+              {grupos.otras.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.nombreTitular} — {d.nombre} — {formatMoney(d.saldo)}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
+
+        {seleccionada && (
+          <p className={`text-xs mb-3 ${esExterna ? 'text-indigo-600' : 'text-slate-500'}`}>
+            {esExterna
+              ? `Transferencia externa hacia ${seleccionada.idUsuario && grupos.otras.find(o => o.id === seleccionada.id)?.nombreTitular}. Se registrara en la red de transferencias.`
+              : 'Transferencia interna entre billeteras del mismo usuario.'}
+          </p>
+        )}
 
         <label className="block text-sm font-medium text-slate-700 mb-1">
           Monto
@@ -80,7 +125,6 @@ export default function TransferirModal({ open, onClose, billetera, onSuccess })
 
         <p className="text-xs text-slate-500 mb-4">
           Cada $100 transferidos generan 3 puntos al usuario origen.
-          Si la billetera destino pertenece al mismo usuario sera transferencia interna.
         </p>
 
         {error && (

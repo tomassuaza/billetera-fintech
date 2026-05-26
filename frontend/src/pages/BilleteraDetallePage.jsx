@@ -113,7 +113,7 @@ export default function BilleteraDetallePage() {
                 className="bg-white border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 rounded-lg p-4 transition shadow-sm">
                 <div className="text-3xl mb-1">⇄</div>
                 <div className="font-medium text-indigo-700">Transferir</div>
-                <div className="text-xs text-slate-500 mt-1">A otra billetera</div>
+                <div className="text-xs text-slate-500 mt-1">Mismo o a otro usuario</div>
               </button>
             </div>
           ) : (
